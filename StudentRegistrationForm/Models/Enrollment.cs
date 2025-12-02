@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace StudentRegistrationForm.Models;
 
-public partial class Enrollment
+public class Enrollment
 {
     public Guid EnrollmentId { get; set; }
 

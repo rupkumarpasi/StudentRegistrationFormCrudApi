@@ -27,10 +27,7 @@ namespace StudentRegistrationForm.Services
             {
                 StudentId = studentId,
                 ApplicationDate = DateOnly.FromDateTime(
-                    DateTime.TryParse(dto.ApplicationDate, out var appDate)
-                        ? appDate
-                        : DateTime.Today
-                ),
+                    DateTime.TryParse(dto.ApplicationDate, out var appDate) ? appDate : DateTime.Today),
                 PlaceOfApplication = dto.PlaceOfApplication,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
@@ -43,7 +40,6 @@ namespace StudentRegistrationForm.Services
                 Financial = dto.Financial,
                 Transportation = dto.Transportation,
 
-                // DocumentInfo – DTO se Entity mein convert karo
                 DocumentInfo = dto.DocumentInfo != null ? new DocumentInfo
                 {
                     StudentId = studentId,
@@ -66,7 +62,7 @@ namespace StudentRegistrationForm.Services
                     WardNumber = a.WardNumber,
                     ToleStreet = a.ToleStreet,
                     HouseNumber = a.HouseNumber,
-                    IsSameAsPermanent = a.IsSameAsPermanent,
+                    IsSameAsPermanent = a.IsSameAsPermanent ?? false,
                     CreatedAt = DateTime.UtcNow
                 }).ToList(),
 
@@ -95,23 +91,6 @@ namespace StudentRegistrationForm.Services
                     CreatedAt = DateTime.UtcNow
                 }).ToList(),
 
-                Enrollments = dto.Enrollments.Select(e => new Enrollment
-                {
-                    EnrollmentId = Guid.NewGuid(),
-                    StudentId = studentId,
-                    CurrentProgramEnrollment = e.CurrentProgramEnrollment,
-                    Program = e.Program,
-                    CourseLevel = e.CourseLevel,
-                    AcademicYear = e.AcademicYear,
-                    SemesterOrClass = e.SemesterOrClass,
-                    Section = e.Section,
-                    RollNumber = e.RollNumber,
-                    RegistrationNumber = e.RegistrationNumber,
-                    EnrollDate = DateOnly.FromDateTime(DateTime.Parse(e.EnrollDate)),
-                    AcademicStatus = e.AcademicStatus,
-                    FacultyId = e.FacultyId
-                }).ToList(),
-
                 EmergencyContacts = dto.EmergencyContacts.Select(ec => new EmergencyContact
                 {
                     EmergencyContactId = Guid.NewGuid(),
@@ -122,7 +101,6 @@ namespace StudentRegistrationForm.Services
                     CreatedAt = DateTime.UtcNow
                 }).ToList(),
 
-                // Missing Collections – ab perfectly add ho gaye!
                 Achievements = dto.Achievements.Select(a => new Achievement
                 {
                     AchievementId = Guid.NewGuid(),
@@ -150,14 +128,56 @@ namespace StudentRegistrationForm.Services
                     ProviderName = s.ProviderName,
                     ScholarshipAmount = s.ScholarshipAmount,
                     FinancialStudentId = studentId
-                }).ToList()
+                }).ToList(),
+
+                Enrollments = new List<Enrollment>()
             };
 
-            // Fix 1: AddAsync → Add (agar sync hai) ya await AddAsync
-            _uow.Students.AddAsync(student);  // Agar Add sync hai
-            // Ya agar AddAsync hai toh: await _uow.Students.AddAsync(student);
+            // THE MAGIC FIX: Handle FacultyId safely
+            foreach (var enrollDto in dto.Enrollments)
+            {
+                if (!enrollDto.FacultyId.HasValue)
+                    throw new Exception("FacultyId is required for enrollment.");
 
-            // Fix 2: CommitAsync await karo
+                var facultyId = enrollDto.FacultyId.Value;
+
+                // Check if Faculty exists
+                bool facultyExists = await _uow.Faculties.ExistsAsync(facultyId);
+
+                if (!facultyExists)
+                {
+                    // AUTO-CREATE the missing faculty
+                    var newFaculty = new Faculty
+                    {
+                        FacultyId = facultyId,
+                        FacultyName = enrollDto.Program ?? "Unknown Program",
+                        Description = $"Auto-created during student enrollment: {enrollDto.CurrentProgramEnrollment}",
+                        //CreatedAt = DateTime.UtcNow
+                    };
+                    await _uow.Faculties.AddAsync(newFaculty);
+                }
+
+                // Now safe to add enrollment
+                student.Enrollments.Add(new Enrollment
+                {
+                    EnrollmentId = Guid.NewGuid(),
+                    StudentId = studentId,
+                    CurrentProgramEnrollment = enrollDto.CurrentProgramEnrollment,
+                    Program = enrollDto.Program,
+                    CourseLevel = enrollDto.CourseLevel,
+                    AcademicYear = enrollDto.AcademicYear,
+                    SemesterOrClass = enrollDto.SemesterOrClass,
+                    Section = enrollDto.Section,
+                    RollNumber = enrollDto.RollNumber,
+                    RegistrationNumber = enrollDto.RegistrationNumber,
+                    EnrollDate = DateOnly.FromDateTime(DateTime.Parse(enrollDto.EnrollDate)),
+                    AcademicStatus = enrollDto.AcademicStatus,
+                    FacultyId = facultyId
+                });
+            }
+
+            // Save everything in ONE transaction
+            await _uow.Students.AddAsync(student);
             await _uow.CommitAsync();
 
             return student;
