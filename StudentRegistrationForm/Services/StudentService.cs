@@ -33,12 +33,61 @@ namespace StudentRegistrationForm.Services
                 UpdatedAt = DateTime.UtcNow,
 
                 // One-to-One
-                PersonalDetail = dto.PersonalDetail,
-                ContactInfo = dto.ContactInfo,
-                Citizenship = dto.Citizenship,
-                EthnicityInfo = dto.EthnicityInfo,
-                Financial = dto.Financial,
-                Transportation = dto.Transportation,
+                PersonalDetail = dto.PersonalDetail != null ?
+                new PersonalDetail
+                {
+                    StudentId = studentId,
+                    FirstName = dto.PersonalDetail.FirstName,
+                    MiddleName = dto.PersonalDetail.MiddleName,
+                    LastName = dto.PersonalDetail.LastName,
+                    Nationality = dto.PersonalDetail.Nationality,
+                    Gender = dto.PersonalDetail.Gender,
+                    BloodGroup = dto.PersonalDetail.BloodGroup,
+                    MaritalStatus = dto.PersonalDetail.MaritalStatus,
+                    Religion = dto.PersonalDetail.Religion,
+                    DisabilityStatus = dto.PersonalDetail.DisabilityStatus,
+                    DisabilityType = dto.PersonalDetail.DisabilityType,
+                    DisabilityPercentage = dto.PersonalDetail.DisabilityPercentage
+                } : null,
+                ContactInfo = dto.ContactInfo != null ?
+                new ContactInfo
+                {
+                    StudentId = studentId,
+                    Email = dto.ContactInfo.Email,
+                    AlternateEmail = dto.ContactInfo.AlternateEmail,
+                    PrimaryMobile = dto.ContactInfo.PrimaryMobile,
+                    SecondaryMobile = dto.ContactInfo.SecondaryMobile
+                } : null,
+                Citizenship = dto.Citizenship != null ? new Citizenship
+                {
+                    StudentId = studentId,
+                    CitizenshipNumber = dto.Citizenship.CitizenshipNumber,
+                    IssueDate = dto.Citizenship.IssueDate,
+                    IssueDistrict = dto.Citizenship.IssueDistrict,
+                    CitizenshipCopyPath = dto.Citizenship.CitizenshipCopyPath
+                } : null,
+                EthnicityInfo = dto.EthnicityInfo != null ? new EthnicityInfo
+                {
+                    StudentId = studentId,
+                    CasteEthnicity = dto.EthnicityInfo.CasteEthnicity,
+                    EthnicityType = dto.EthnicityInfo.EthnicityType
+                } : null,
+                Financial = dto.Financial != null ? new Financial
+                {
+                    StudentId = studentId,
+                    FeeCategory = dto.Financial.FeeCategory,
+                    AnnualFamilyIncome = dto.Financial.AnnualFamilyIncome,
+                    BankAccountHolder = dto.Financial.BankAccountHolder,
+                    BankName=dto.Financial.BankName,
+                    AccountNumber = dto.Financial.AccountNumber,
+                    Branch = dto.Financial.Branch
+                } : null,
+                    Transportation = dto.Transportation != null ? new Transportation
+                    {
+                    StudentId= studentId,
+                    IsHosteller=dto.Transportation.IsHosteller,
+                    TransportationMethod=dto.Transportation.TransportationMethod
+                    } :null,
 
                 DocumentInfo = dto.DocumentInfo != null ? new DocumentInfo
                 {

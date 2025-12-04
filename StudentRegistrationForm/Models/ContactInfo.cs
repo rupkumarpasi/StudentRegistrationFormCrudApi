@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace StudentRegistrationForm.Models;
 
@@ -14,6 +15,6 @@ public partial class ContactInfo
     public string? PrimaryMobile { get; set; }
 
     public string? SecondaryMobile { get; set; }
-
+    [JsonIgnore]
     public virtual Student? Student { get; set; } = null!;
 }

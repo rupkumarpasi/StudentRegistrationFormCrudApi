@@ -12,12 +12,12 @@ namespace StudentRegistrationForm.Models.DTOs
         public string? PlaceOfApplication { get; set; }
 
         // One-to-One Entities
-        public PersonalDetail? PersonalDetail { get; set; }
+        public PersonalDetailDto? PersonalDetail { get; set; }
         public ContactInfo? ContactInfo { get; set; }
-        public Citizenship? Citizenship { get; set; }
-        public EthnicityInfo? EthnicityInfo { get; set; }
-        public Financial? Financial { get; set; }
-        public Transportation? Transportation { get; set; }
+        public CitizenshipDto? Citizenship { get; set; }
+        public EthnicityInfoDto? EthnicityInfo { get; set; }
+        public FinancialDto? Financial { get; set; }
+        public TransportationDto? Transportation { get; set; }
         public DocumentInfoCreateDto? DocumentInfo { get; set; }  // Navigation hataya
 
         // Collections
@@ -116,5 +116,88 @@ namespace StudentRegistrationForm.Models.DTOs
         public string? ScholarshipType { get; set; }
         public string? ProviderName { get; set; }
         public decimal? ScholarshipAmount { get; set; }
+    }
+
+
+    public class PersonalDetailDto
+    {
+        public string FirstName { get; set; } = null!;
+
+        public string? MiddleName { get; set; }
+
+        public string LastName { get; set; } = null!;
+
+        public DateOnly DateOfBirth { get; set; }
+
+        public string? PlaceOfBirth { get; set; }
+
+        public string? Nationality { get; set; }
+
+        public string? Gender { get; set; }
+
+        public string? BloodGroup { get; set; }
+
+        public string? MaritalStatus { get; set; }
+
+        public string? Religion { get; set; }
+
+        public string? DisabilityStatus { get; set; }
+
+        public string? DisabilityType { get; set; }
+
+        public int? DisabilityPercentage { get; set; }
+
+        public string? ImagePath { get; set; }
+    }
+
+    public class ContactInfoDto
+    {
+        public string Email { get; set; } = null!;
+
+        public string? AlternateEmail { get; set; }
+
+        public string? PrimaryMobile { get; set; }
+
+        public string? SecondaryMobile { get; set; }
+    }
+
+    public class CitizenshipDto
+    {
+        public string CitizenshipNumber { get; set; } = null!;
+
+        public DateOnly? IssueDate { get; set; }
+
+        public string? IssueDistrict { get; set; }
+
+        public string? CitizenshipCopyPath { get; set; }
+    }
+
+    public class EthnicityInfoDto
+    {
+        public string CasteEthnicity { get; set; } = null!;
+
+        public string? EthnicityType { get; set; }
+    }
+
+    public class FinancialDto
+    {
+        public string FeeCategory { get; set; } = null!;
+
+        public string? AnnualFamilyIncome { get; set; }
+
+        public string? BankAccountHolder { get; set; }
+
+        public string? BankName { get; set; }
+
+        public string? AccountNumber { get; set; }
+
+        public string? Branch { get; set; }
+    }
+
+    public class TransportationDto
+    {
+        public bool? IsHosteller { get; set; }
+
+        public string? TransportationMethod { get; set; }
     }
 }
