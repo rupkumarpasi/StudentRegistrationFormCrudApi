@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace StudentRegistrationForm.Models;
 
@@ -17,5 +18,6 @@ public partial class DocumentInfo
 
     public string? ProvisionalAdmitCardPath { get; set; }
 
+    
     public virtual Student? Student { get; set; } = null!;
 }

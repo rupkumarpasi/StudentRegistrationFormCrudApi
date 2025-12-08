@@ -4,6 +4,7 @@ namespace StudentRegistrationForm.Repositories
 {
     public interface IStudentRepository : IGenericRepository<Student>
     {
-        Task<Student?> GetStudentWithDetails(Guid id);
+        Task<Student?> GetStudentWithDetailsAsync(Guid id);
     }
 }
+             

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace StudentRegistrationForm.Models;
 
@@ -20,6 +21,6 @@ public partial class Financial
     public string? Branch { get; set; }
 
     public virtual ICollection<Scholarship> Scholarships { get; set; } = new List<Scholarship>();
-
+    
     public virtual Student? Student { get; set; } = null!;
 }

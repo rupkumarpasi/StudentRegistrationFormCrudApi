@@ -1,39 +1,42 @@
-﻿// File: Models/DTOs/CreateStudentRequest.cs
-namespace StudentRegistrationForm.Models.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace StudentRegistrationForm.Dto
 {
+    // Yeh ab pura request body hai — ek hi object
     public class CreateStudentRequest
     {
-        public StudentCreateDto student { get; set; } = null!;
-    }
-
-    public class StudentCreateDto
-    {
+        [Required]
         public string? ApplicationDate { get; set; }
+
         public string? PlaceOfApplication { get; set; }
 
-        // One-to-One Entities
+        // Personal Info
         public PersonalDetailDto? PersonalDetail { get; set; }
-        public ContactInfo? ContactInfo { get; set; }
+        public ContactInfoDto? ContactInfo { get; set; }
         public CitizenshipDto? Citizenship { get; set; }
         public EthnicityInfoDto? EthnicityInfo { get; set; }
         public FinancialDto? Financial { get; set; }
         public TransportationDto? Transportation { get; set; }
-        public DocumentInfoCreateDto? DocumentInfo { get; set; }  // Navigation hataya
 
-        // Collections
+        // Base64 Images (Frontend se aise bhejega: data:image/jpeg;base64,...)
+        public string? PhotoBase64 { get; set; }
+        public string? SignatureBase64 { get; set; }
+        public string? CitizenshipBase64 { get; set; }
+        public string? CharacterCertificateBase64 { get; set; }
+        public string? ProvisionalAdmitCardBase64 { get; set; }
+
+        // Direct Lists — No JSON string needed!
         public List<AddressCreateDto> Addresses { get; set; } = new();
         public List<GuardianCreateDto> Guardians { get; set; } = new();
         public List<AcademicHistoryCreateDto> AcademicHistories { get; set; } = new();
         public List<EmergencyContactCreateDto> EmergencyContacts { get; set; } = new();
         public List<EnrollmentCreateDto> Enrollments { get; set; } = new();
-
-        // Ye teen missing the pehle – ab add kar diye!
         public List<AchievementCreateDto> Achievements { get; set; } = new();
         public List<ExtracurricularCreateDto> Extracurriculars { get; set; } = new();
         public List<ScholarshipCreateDto> Scholarships { get; set; } = new();
     }
 
-    // DocumentInfo ke liye alag DTO (circular reference avoid karne ke liye)
+    // Baaki sab DTO same rahenge (sirf StudentCreateDto hata diya)
     public class DocumentInfoCreateDto
     {
         public string? PhotoPath { get; set; }
@@ -43,7 +46,7 @@ namespace StudentRegistrationForm.Models.DTOs
         public string? ProvisionalAdmitCardPath { get; set; }
     }
 
-    // Child DTOs
+    // Address, Guardian, AcademicHistory, etc. — sab same rahenge
     public class AddressCreateDto
     {
         public string AddressType { get; set; } = null!;
@@ -97,7 +100,6 @@ namespace StudentRegistrationForm.Models.DTOs
         public string ContactNumber { get; set; } = null!;
     }
 
-    // Missing DTOs – ab add kar diye!
     public class AchievementCreateDto
     {
         public string? AwardTitle { get; set; }
@@ -118,86 +120,59 @@ namespace StudentRegistrationForm.Models.DTOs
         public decimal? ScholarshipAmount { get; set; }
     }
 
-
     public class PersonalDetailDto
     {
         public string FirstName { get; set; } = null!;
-
         public string? MiddleName { get; set; }
-
         public string LastName { get; set; } = null!;
-
-        public DateOnly DateOfBirth { get; set; }
-
+        public string? DateOfBirth { get; set; }
         public string? PlaceOfBirth { get; set; }
-
         public string? Nationality { get; set; }
-
         public string? Gender { get; set; }
-
         public string? BloodGroup { get; set; }
-
         public string? MaritalStatus { get; set; }
-
         public string? Religion { get; set; }
-
         public string? DisabilityStatus { get; set; }
-
         public string? DisabilityType { get; set; }
-
         public int? DisabilityPercentage { get; set; }
-
         public string? ImagePath { get; set; }
     }
 
     public class ContactInfoDto
     {
         public string Email { get; set; } = null!;
-
         public string? AlternateEmail { get; set; }
-
         public string? PrimaryMobile { get; set; }
-
         public string? SecondaryMobile { get; set; }
     }
 
     public class CitizenshipDto
     {
         public string CitizenshipNumber { get; set; } = null!;
-
-        public DateOnly? IssueDate { get; set; }
-
+        public string? IssueDate { get; set; }
         public string? IssueDistrict { get; set; }
-
         public string? CitizenshipCopyPath { get; set; }
     }
 
     public class EthnicityInfoDto
     {
         public string CasteEthnicity { get; set; } = null!;
-
         public string? EthnicityType { get; set; }
     }
 
     public class FinancialDto
     {
         public string FeeCategory { get; set; } = null!;
-
         public string? AnnualFamilyIncome { get; set; }
-
         public string? BankAccountHolder { get; set; }
-
         public string? BankName { get; set; }
-
         public string? AccountNumber { get; set; }
-
         public string? Branch { get; set; }
     }
 
     public class TransportationDto
     {
         public bool? IsHosteller { get; set; }
-
         public string? TransportationMethod { get; set; }
     }
 }

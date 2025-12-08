@@ -1,5 +1,6 @@
-﻿using StudentRegistrationForm.Models;
-using StudentRegistrationForm.Models.DTOs;
+﻿// File: Services/StudentService.cs
+using StudentRegistrationForm.Dto;
+using StudentRegistrationForm.Models;
 using StudentRegistrationForm.Repositories;
 
 namespace StudentRegistrationForm.Services
@@ -7,250 +8,209 @@ namespace StudentRegistrationForm.Services
     public class StudentService : IStudentService
     {
         private readonly IUnitOfWork _uow;
+        private readonly FileUploadHelper _fileHelper;
 
-        public StudentService(IUnitOfWork uow)
+        public StudentService(IUnitOfWork uow, FileUploadHelper fileHelper)
         {
             _uow = uow;
+            _fileHelper = fileHelper;
         }
 
-        public async Task<IEnumerable<Student>> GetAllAsync() =>
-            await _uow.Students.GetAllAsync();
+        // Yeh method tere interface mein hai → GetByIdAsync
+        public async Task<Student?> GetByIdAsync(Guid id)
+        {
+            return await _uow.Students.GetStudentWithDetailsAsync(id);
+        }
 
-        public async Task<Student?> GetByIdAsync(Guid id) =>
-            await _uow.Students.GetByIdAsync(id);
-
-        public async Task<Student> CreateFromDtoAsync(StudentCreateDto dto)
+        // Yeh method tere interface mein hai → CreateFromDtoAsync
+        public async Task<Student> CreateFromDtoAsync(CreateStudentRequest request)
         {
             var studentId = Guid.NewGuid();
+
+            // Save Base64 images
+            var documentInfo = new DocumentInfo
+            {
+                StudentId = studentId,
+                PhotoPath = _fileHelper.SaveBase64Image(request.PhotoBase64, "photos"),
+                SignaturePath = _fileHelper.SaveBase64Image(request.SignatureBase64, "signatures"),
+                CitizenshipDocumentPath = _fileHelper.SaveBase64Image(request.CitizenshipBase64, "citizenship"),
+                CharacterCertificatePath = _fileHelper.SaveBase64Image(request.CharacterCertificateBase64, "certificates"),
+                ProvisionalAdmitCardPath = _fileHelper.SaveBase64Image(request.ProvisionalAdmitCardBase64, "provisional")
+            };
+
+            // Parse Application Date
+            DateOnly applicationDate = DateOnly.MinValue;
+            if (!string.IsNullOrWhiteSpace(request.ApplicationDate))
+                DateOnly.TryParse(request.ApplicationDate, out applicationDate);
 
             var student = new Student
             {
                 StudentId = studentId,
-                ApplicationDate = DateOnly.FromDateTime(
-                    DateTime.TryParse(dto.ApplicationDate, out var appDate) ? appDate : DateTime.Today),
-                PlaceOfApplication = dto.PlaceOfApplication,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
+                ApplicationDate = applicationDate,
+                PlaceOfApplication = request.PlaceOfApplication ?? "Not Specified",
+                DocumentInfo = documentInfo,
 
-                // One-to-One
-                PersonalDetail = dto.PersonalDetail != null ?
-                new PersonalDetail
+                // Personal Detail
+                PersonalDetail = request.PersonalDetail != null ? new PersonalDetail
                 {
                     StudentId = studentId,
-                    FirstName = dto.PersonalDetail.FirstName,
-                    MiddleName = dto.PersonalDetail.MiddleName,
-                    LastName = dto.PersonalDetail.LastName,
-                    Nationality = dto.PersonalDetail.Nationality,
-                    Gender = dto.PersonalDetail.Gender,
-                    BloodGroup = dto.PersonalDetail.BloodGroup,
-                    MaritalStatus = dto.PersonalDetail.MaritalStatus,
-                    Religion = dto.PersonalDetail.Religion,
-                    DisabilityStatus = dto.PersonalDetail.DisabilityStatus,
-                    DisabilityType = dto.PersonalDetail.DisabilityType,
-                    DisabilityPercentage = dto.PersonalDetail.DisabilityPercentage
+                    FirstName = request.PersonalDetail.FirstName,
+                    MiddleName = request.PersonalDetail.MiddleName,
+                    LastName = request.PersonalDetail.LastName,
+                    DateOfBirth = DateOnly.TryParse(request.PersonalDetail.DateOfBirth, out var dob)
+        ? dob
+        : DateOnly.MinValue,
+                    PlaceOfBirth = request.PersonalDetail.PlaceOfBirth,
+                    Nationality = request.PersonalDetail.Nationality ?? "Nepali",
+                    Gender = request.PersonalDetail.Gender,
+                    BloodGroup = request.PersonalDetail.BloodGroup,
+                    MaritalStatus = request.PersonalDetail.MaritalStatus,
+                    Religion = request.PersonalDetail.Religion,
+                    DisabilityStatus = request.PersonalDetail.DisabilityStatus,
+                    DisabilityType = request.PersonalDetail.DisabilityType,
+                    DisabilityPercentage = request.PersonalDetail.DisabilityPercentage,
+                    ImagePath = request.PersonalDetail.ImagePath
                 } : null,
-                ContactInfo = dto.ContactInfo != null ?
-                new ContactInfo
+
+                // Contact Info
+                ContactInfo = request.ContactInfo != null ? new ContactInfo
                 {
                     StudentId = studentId,
-                    Email = dto.ContactInfo.Email,
-                    AlternateEmail = dto.ContactInfo.AlternateEmail,
-                    PrimaryMobile = dto.ContactInfo.PrimaryMobile,
-                    SecondaryMobile = dto.ContactInfo.SecondaryMobile
+                    Email = request.ContactInfo.Email,
+                    AlternateEmail = request.ContactInfo.AlternateEmail,
+                    PrimaryMobile = request.ContactInfo.PrimaryMobile,
+                    SecondaryMobile = request.ContactInfo.SecondaryMobile
                 } : null,
-                Citizenship = dto.Citizenship != null ? new Citizenship
+
+                // Citizenship
+                Citizenship = request.Citizenship != null ? new Citizenship
                 {
                     StudentId = studentId,
-                    CitizenshipNumber = dto.Citizenship.CitizenshipNumber,
-                    IssueDate = dto.Citizenship.IssueDate,
-                    IssueDistrict = dto.Citizenship.IssueDistrict,
-                    CitizenshipCopyPath = dto.Citizenship.CitizenshipCopyPath
+                    CitizenshipNumber = request.Citizenship.CitizenshipNumber,
+                    IssueDate = DateOnly.TryParse(request.Citizenship.IssueDate, out var idate) ? idate : null,
+                    IssueDistrict = request.Citizenship.IssueDistrict,
+                    CitizenshipCopyPath = request.Citizenship.CitizenshipCopyPath
                 } : null,
-                EthnicityInfo = dto.EthnicityInfo != null ? new EthnicityInfo
+
+                // Ethnicity, Financial, Transportation
+                EthnicityInfo = request.EthnicityInfo != null ? new EthnicityInfo
                 {
                     StudentId = studentId,
-                    CasteEthnicity = dto.EthnicityInfo.CasteEthnicity,
-                    EthnicityType = dto.EthnicityInfo.EthnicityType
+                    CasteEthnicity = request.EthnicityInfo.CasteEthnicity,
+                    EthnicityType = request.EthnicityInfo.EthnicityType
                 } : null,
-                Financial = dto.Financial != null ? new Financial
+
+                Financial = request.Financial != null ? new Financial
                 {
                     StudentId = studentId,
-                    FeeCategory = dto.Financial.FeeCategory,
-                    AnnualFamilyIncome = dto.Financial.AnnualFamilyIncome,
-                    BankAccountHolder = dto.Financial.BankAccountHolder,
-                    BankName=dto.Financial.BankName,
-                    AccountNumber = dto.Financial.AccountNumber,
-                    Branch = dto.Financial.Branch
+                    FeeCategory = request.Financial.FeeCategory,
+                    AnnualFamilyIncome = request.Financial.AnnualFamilyIncome,
+                    BankAccountHolder = request.Financial.BankAccountHolder,
+                    BankName = request.Financial.BankName,
+                    AccountNumber = request.Financial.AccountNumber,
+                    Branch = request.Financial.Branch
                 } : null,
-                    Transportation = dto.Transportation != null ? new Transportation
+
+                Transportation = request.Transportation != null ? new Transportation
+                {
+                    StudentId = studentId,
+                    IsHosteller = request.Transportation.IsHosteller,
+                    TransportationMethod = request.Transportation.TransportationMethod,
+                    CreatedAt = DateTime.UtcNow
+                } : null,
+
+                // Direct Lists — No JSON string!
+                Addresses = (request.Addresses ?? new List<AddressCreateDto>())
+                    .Select(a => new Address
                     {
-                    StudentId= studentId,
-                    IsHosteller=dto.Transportation.IsHosteller,
-                    TransportationMethod=dto.Transportation.TransportationMethod
-                    } :null,
+                        AddressId = Guid.NewGuid(),
+                        StudentId = studentId,
+                        AddressType = a.AddressType,
+                        Province = a.Province,
+                        District = a.District,
+                        MunicipalityVdc = a.MunicipalityVdc,
+                        WardNumber = a.WardNumber,
+                        ToleStreet = a.ToleStreet,
+                        HouseNumber = a.HouseNumber,
+                        IsSameAsPermanent = a.IsSameAsPermanent ?? false,
+                        CreatedAt = DateTime.UtcNow
+                    }).ToList(),
 
-                DocumentInfo = dto.DocumentInfo != null ? new DocumentInfo
-                {
-                    StudentId = studentId,
-                    PhotoPath = dto.DocumentInfo.PhotoPath,
-                    SignaturePath = dto.DocumentInfo.SignaturePath,
-                    CitizenshipDocumentPath = dto.DocumentInfo.CitizenshipDocumentPath,
-                    CharacterCertificatePath = dto.DocumentInfo.CharacterCertificatePath,
-                    ProvisionalAdmitCardPath = dto.DocumentInfo.ProvisionalAdmitCardPath
-                } : null,
+                Guardians = (request.Guardians ?? new List<GuardianCreateDto>())
+                    .Select(g => new Guardian
+                    {
+                        GuardianId = Guid.NewGuid(),
+                        StudentId = studentId,
+                        FullName = g.FullName,
+                        Relation = g.Relation,
+                        Occupation = g.Occupation,
+                        Mobile = g.Mobile,
+                        Email = g.Email,
+                        IsPrimaryContact = g.IsPrimaryContact,
+                        CreatedAt = DateTime.UtcNow
+                    }).ToList(),
 
-                // Collections
-                Addresses = dto.Addresses.Select(a => new Address
-                {
-                    AddressId = Guid.NewGuid(),
-                    StudentId = studentId,
-                    AddressType = a.AddressType,
-                    Province = a.Province,
-                    District = a.District,
-                    MunicipalityVdc = a.MunicipalityVdc,
-                    WardNumber = a.WardNumber,
-                    ToleStreet = a.ToleStreet,
-                    HouseNumber = a.HouseNumber,
-                    IsSameAsPermanent = a.IsSameAsPermanent ?? false,
-                    CreatedAt = DateTime.UtcNow
-                }).ToList(),
+                AcademicHistories = (request.AcademicHistories ?? new List<AcademicHistoryCreateDto>())
+                    .Select(ah => new AcademicHistory
+                    {
+                        AcademicHistoryId = Guid.NewGuid(),
+                        StudentId = studentId,
+                        Qualification = ah.Qualification,
+                        BoardUniversity = ah.BoardUniversity,
+                        InstitutionName = ah.InstitutionName,
+                        PassedYear = ah.PassedYear,
+                        GpaorDivision = ah.GpaorDivision,
+                        CreatedAt = DateTime.UtcNow
+                    }).ToList(),
 
-                Guardians = dto.Guardians.Select(g => new Guardian
-                {
-                    GuardianId = Guid.NewGuid(),
-                    StudentId = studentId,
-                    FullName = g.FullName,
-                    Relation = g.Relation,
-                    Occupation = g.Occupation,
-                    Mobile = g.Mobile,
-                    Email = g.Email,
-                    IsPrimaryContact = g.IsPrimaryContact,
-                    CreatedAt = DateTime.UtcNow
-                }).ToList(),
+                EmergencyContacts = (request.EmergencyContacts ?? new List<EmergencyContactCreateDto>())
+                    .Select(ec => new EmergencyContact
+                    {
+                        EmergencyContactId = Guid.NewGuid(),
+                        StudentId = studentId,
+                        ContactName = ec.ContactName,
+                        Relation = ec.Relation,
+                        ContactNumber = ec.ContactNumber,
+                        CreatedAt = DateTime.UtcNow
+                    }).ToList(),
 
-                AcademicHistories = dto.AcademicHistories.Select(ah => new AcademicHistory
-                {
-                    AcademicHistoryId = Guid.NewGuid(),
-                    StudentId = studentId,
-                    Qualification = ah.Qualification,
-                    BoardUniversity = ah.BoardUniversity,
-                    InstitutionName = ah.InstitutionName,
-                    PassedYear = ah.PassedYear,
-                    GpaorDivision = ah.GpaorDivision,
-                    CreatedAt = DateTime.UtcNow
-                }).ToList(),
+                Enrollments = (request.Enrollments ?? new List<EnrollmentCreateDto>())
+                    .Select(e => new Enrollment
+                    {
+                        EnrollmentId = Guid.NewGuid(),
+                        StudentId = studentId,
+                        CurrentProgramEnrollment = e.CurrentProgramEnrollment,
+                        Program = e.Program,
+                        CourseLevel = e.CourseLevel,
+                        AcademicYear = e.AcademicYear,
+                        SemesterOrClass = e.SemesterOrClass,
+                        Section = e.Section,
+                        RollNumber = e.RollNumber,
+                        RegistrationNumber = e.RegistrationNumber,
+                        EnrollDate = DateOnly.TryParse(e.EnrollDate, out var edate) ? edate : DateOnly.MinValue,
+                        AcademicStatus = e.AcademicStatus,
+                    
+                    }).ToList(),
 
-                EmergencyContacts = dto.EmergencyContacts.Select(ec => new EmergencyContact
-                {
-                    EmergencyContactId = Guid.NewGuid(),
-                    StudentId = studentId,
-                    ContactName = ec.ContactName,
-                    Relation = ec.Relation,
-                    ContactNumber = ec.ContactNumber,
-                    CreatedAt = DateTime.UtcNow
-                }).ToList(),
+                Achievements = (request.Achievements ?? new List<AchievementCreateDto>())
+                    .Select(a => new Achievement { /* mapping */ }).ToList(),
 
-                Achievements = dto.Achievements.Select(a => new Achievement
-                {
-                    AchievementId = Guid.NewGuid(),
-                    StudentId = studentId,
-                    AwardTitle = a.AwardTitle,
-                    IssuingOrganization = a.IssuingOrganization,
-                    YearReceived = a.YearReceived,
-                    CreatedAt = DateTime.UtcNow
-                }).ToList(),
+                Extracurriculars = (request.Extracurriculars ?? new List<ExtracurricularCreateDto>())
+                    .Select(e => new Extracurricular { /* mapping */ }).ToList(),
 
-                Extracurriculars = dto.Extracurriculars.Select(e => new Extracurricular
-                {
-                    ExtracurricularId = Guid.NewGuid(),
-                    StudentId = studentId,
-                    ActivityType = e.ActivityType,
-                    OtherDetails = e.OtherDetails,
-                    CreatedAt = DateTime.UtcNow
-                }).ToList(),
-
-                Scholarships = dto.Scholarships.Select(s => new Scholarship
-                {
-                    ScholarshipId = Guid.NewGuid(),
-                    StudentId = studentId,
-                    ScholarshipType = s.ScholarshipType,
-                    ProviderName = s.ProviderName,
-                    ScholarshipAmount = s.ScholarshipAmount,
-                    FinancialStudentId = studentId
-                }).ToList(),
-
-                Enrollments = new List<Enrollment>()
+                Scholarships = (request.Scholarships ?? new List<ScholarshipCreateDto>())
+                    .Select(s => new Scholarship { /* mapping */ }).ToList()
             };
 
-            // THE MAGIC FIX: Handle FacultyId safely
-            foreach (var enrollDto in dto.Enrollments)
-            {
-                if (!enrollDto.FacultyId.HasValue)
-                    throw new Exception("FacultyId is required for enrollment.");
-
-                var facultyId = enrollDto.FacultyId.Value;
-
-                // Check if Faculty exists
-                bool facultyExists = await _uow.Faculties.ExistsAsync(facultyId);
-
-                if (!facultyExists)
-                {
-                    // AUTO-CREATE the missing faculty
-                    var newFaculty = new Faculty
-                    {
-                        FacultyId = facultyId,
-                        FacultyName = enrollDto.Program ?? "Unknown Program",
-                        Description = $"Auto-created during student enrollment: {enrollDto.CurrentProgramEnrollment}",
-                        //CreatedAt = DateTime.UtcNow
-                    };
-                    await _uow.Faculties.AddAsync(newFaculty);
-                }
-
-                // Now safe to add enrollment
-                student.Enrollments.Add(new Enrollment
-                {
-                    EnrollmentId = Guid.NewGuid(),
-                    StudentId = studentId,
-                    CurrentProgramEnrollment = enrollDto.CurrentProgramEnrollment,
-                    Program = enrollDto.Program,
-                    CourseLevel = enrollDto.CourseLevel,
-                    AcademicYear = enrollDto.AcademicYear,
-                    SemesterOrClass = enrollDto.SemesterOrClass,
-                    Section = enrollDto.Section,
-                    RollNumber = enrollDto.RollNumber,
-                    RegistrationNumber = enrollDto.RegistrationNumber,
-                    EnrollDate = DateOnly.FromDateTime(DateTime.Parse(enrollDto.EnrollDate)),
-                    AcademicStatus = enrollDto.AcademicStatus,
-                    FacultyId = facultyId
-                });
-            }
-
-            // Save everything in ONE transaction
             await _uow.Students.AddAsync(student);
             await _uow.CommitAsync();
 
             return student;
         }
 
-        public async Task<bool> UpdateAsync(Guid id, Student student)
+        public async Task<CreateStudentRequest> updateStudentAsync(int id,CreateStudentRequest student)
         {
-            var existing = await _uow.Students.GetByIdAsync(id);
-            if (existing == null) return false;
-
-            // Yahan proper mapping karna chahiye (future mein AutoMapper use karna)
-            _uow.Students.Update(existing);
-            await _uow.CommitAsync();
-            return true;
-        }
-
-        public async Task<bool> DeleteAsync(Guid id)
-        {
-            var existing = await _uow.Students.GetByIdAsync(id);
-            if (existing == null) return false;
-
-            _uow.Students.Delete(existing);
-            await _uow.CommitAsync();
-            return true;
+            //return await _uow.Students.
         }
     }
 }

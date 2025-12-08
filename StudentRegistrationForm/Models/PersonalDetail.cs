@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace StudentRegistrationForm.Models;
 
@@ -35,5 +36,6 @@ public partial class PersonalDetail
 
     public string? ImagePath { get; set; }
 
+    
     public virtual Student? Student { get; set; } = null!;
 }

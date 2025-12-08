@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace StudentRegistrationForm.Models;
 
@@ -13,5 +14,6 @@ public partial class Transportation
 
     public DateTime? CreatedAt { get; set; }
 
+    
     public virtual Student? Student { get; set; } = null!;
 }

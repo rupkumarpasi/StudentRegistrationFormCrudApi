@@ -1,8 +1,7 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿// File: Controllers/StudentController.cs
 using Microsoft.AspNetCore.Mvc;
-
+using StudentRegistrationForm.Dto;
 using StudentRegistrationForm.Models;
-using StudentRegistrationForm.Models.DTOs;
 using StudentRegistrationForm.Services;
 
 namespace StudentRegistrationForm.Controllers
@@ -11,60 +10,87 @@ namespace StudentRegistrationForm.Controllers
     [ApiController]
     public class StudentController : ControllerBase
     {
-        private readonly IStudentService _service;
+        private readonly IStudentService _studentService;
 
-        public StudentController(IStudentService service)
+        public StudentController(IStudentService studentService)
         {
-            _service = service;
+            _studentService = studentService;
         }
 
-        // GET: api/student
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
-        {
-            var data = await _service.GetAllAsync();
-            return Ok(data);
-        }
-
-        // GET: api/student/{id}
-        [HttpGet("{id}")]
-        public async Task<IActionResult> Get(Guid id)
-        {
-            var student = await _service.GetByIdAsync(id);
-            if (student == null) return NotFound();
-
-            return Ok(student);
-        }
-
-        // POST: api/student
+        // CREATE - POST /api/Student
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateStudentRequest request)
         {
-            if (request?.student == null)
-                return BadRequest("Student data is required.");
+            if (request == null)
+                return BadRequest("Request cannot be null.");
 
-            var result = await _service.CreateFromDtoAsync(request.student);
-            return CreatedAtAction(nameof(Get), new { id = result.StudentId }, result);
+            try
+            {
+                var student = await _studentService.CreateFromDtoAsync(request);
+                return CreatedAtAction(nameof(GetAll), new { id = student.StudentId }, student);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = "Failed to create student", Error = ex.Message });
+            }
         }
 
-        // PUT: api/student/{id}
+        // READ ALL - GET /api/Student
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetAll(Guid id)
+        {
+            try
+            {
+                var students = await _studentService.GetByIdAsync(id);
+                
+                return Ok(students);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "Error fetching students", Error = ex.Message });
+            }
+        }
+
+        // StudentController.cs mein ye method add kar de
+
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] Student student)
+        public async Task<IActionResult> UpdateStudent(Guid id, Student student)
         {
-            var success = await _service.UpdateAsync(id, student);
-            if (!success) return NotFound();
+            if (id != student.StudentId)
+                return BadRequest("ID mismatch");
 
-            return Ok("Updated Successfully");
+            var existingStudent = await _studentService.GetByIdAsync(id);
+            if (existingStudent == null)
+                return NotFound();
+
+            try
+            {
+                await _studentService.UpdateStudentAsync(student);
+                return NoContent(); // 204 = Update successful
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error: {ex.Message}");
+            }
         }
 
-        // DELETE: api/student/{id}
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id)
+        // DEBUG - Sirf development ke liye
+        [HttpPost("debug")]
+        public IActionResult Debug([FromBody] CreateStudentRequest? request)
         {
-            var success = await _service.DeleteAsync(id);
-            if (!success) return NotFound();
+            if (request == null)
+                return BadRequest("No data received.");
 
-            return Ok("Deleted Successfully");
+            return Ok(new
+            {
+                Message = "Bhai data bilkul sahi aa raha hai!",
+                AddressesCount = request.Addresses?.Count ?? 0,
+                GuardiansCount = request.Guardians?.Count ?? 0,
+                AcademicHistoriesCount = request.AcademicHistories?.Count ?? 0,
+                HasPhoto = !string.IsNullOrEmpty(request.PhotoBase64),
+                PhotoBase64_Length = request.PhotoBase64?.Length ?? 0,
+                SampleData = request
+            });
         }
     }
 }

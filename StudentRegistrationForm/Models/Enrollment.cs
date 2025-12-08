@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace StudentRegistrationForm.Models;
 
@@ -33,5 +34,6 @@ public class Enrollment
 
     public virtual Faculty? Faculty { get; set; }
 
+    
     public virtual Student? Student { get; set; } = null!;
 }

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text.Json.Serialization;
-
+﻿
 namespace StudentRegistrationForm.Models;
 
 public partial class AcademicHistory
@@ -24,6 +21,6 @@ public partial class AcademicHistory
 
     public DateTime? CreatedAt { get; set; }
 
-    [JsonIgnore]
+    
     public virtual Student? Student { get; set; } = null!;
 }
